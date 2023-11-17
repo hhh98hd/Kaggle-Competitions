@@ -1,4 +1,5 @@
 import ntpath
+import math
 
 import pandas as pd
 
@@ -103,7 +104,7 @@ class DataFile():
         Args:
             column (str): Name of the column\n
             drop_first (boolean, optional): Whether to get k-1 dummies out of k categorical levels by removing the first level. The default value is False\n
-            dtype (str, optional): Data type for encoding. The default data type is integer'.
+            dtype (str, optional): Data type for encoding. The default data type is integer ("Int8").
             NOTE: After performing one-hot encoding, name of the column may be modified.
         """
         self._data = pd.get_dummies(self._data, columns=[column], drop_first=drop_first, dtype=dtype)
@@ -124,3 +125,23 @@ class DataFile():
         """
         self._data = self._data.drop([row])
         
+        
+    def get_column_avg(self, column: str):
+        """Get average value of a column. Only applicable to integers or floats
+
+        Args:
+            column (str): Name of the column
+
+        Returns:
+            (float): Average value of the column
+        """
+        sum = 0
+        cnt = 0
+        col = self._data[column]
+        
+        for i in range(0, col.size):
+            if(not math.isnan(col[i])):
+                cnt += 1
+                sum += col[i]
+
+        return sum / cnt        
