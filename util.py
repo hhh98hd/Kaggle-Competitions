@@ -32,7 +32,7 @@ def read_file(path: str):
     else:
         raise TypeError('{type} files are not supported!'.format(type=file_type.upper()))
 
-    return file
+    return file, file_type
 
 
 def get_file_extension(file_path: str):
@@ -63,7 +63,7 @@ class DataFile():
             path (str): Path to the file
         """
         
-        self._data = read_file(path)
+        self._data, self._file_type = read_file(path)
         
         
     def __getitem__(self, key) -> pd.DataFrame:
