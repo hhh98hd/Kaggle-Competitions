@@ -85,16 +85,24 @@ class DataFile():
         
         return res
     
-    def __str__(self) -> str:
-        """Stringlyfy the file
+    def to_string(self, truncate_H=True, truncate_V=True) -> str:
+        """Represent the file content using a string
+
+        Args:
+            truncate_H (bool, optional): Truncate horizontally. Defaults to True.
+            truncate_V (bool, optional): Truncate vertically. Defaults to True.
 
         Returns:
             str: The string representation of the file
         """
-        pd.set_option('display.max_rows', None)
-        pd.set_option('display.max_columns', None)
-        pd.set_option('display.width', None)
-        pd.set_option('display.max_colwidth', None)
+        
+        if not truncate_V:
+            pd.set_option('display.max_rows', None)
+        
+        if not truncate_H:
+            pd.set_option('display.max_columns', None)
+            pd.set_option('display.width', None)
+            pd.set_option('display.max_colwidth', None)
         
         return str(self._data)
     
@@ -127,7 +135,7 @@ class DataFile():
         
         
     def get_column_avg(self, column: str):
-        """Get average value of a column. Only applicable to integers or floats
+        """Get average value of a column. Only applicable to DataFrame of integers or floats
 
         Args:
             column (str): Name of the column
@@ -144,4 +152,7 @@ class DataFile():
                 cnt += 1
                 sum += col[i]
 
-        return sum / cnt        
+        return sum / cnt
+    
+file = DataFile('train.csv')
+print(file.to_string(truncate_V=False, truncate_H=False))

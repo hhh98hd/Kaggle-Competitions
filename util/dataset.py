@@ -6,5 +6,3 @@ class Dataset:
         return Dataset()
     
     pass
-
-dataset = Dataset.from_file('data.csv')
