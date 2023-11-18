@@ -1,5 +1,6 @@
 import ntpath
 import math
+from typing import Any
 
 import pandas as pd
 
@@ -65,7 +66,12 @@ class DataFile():
             path (str): Path to the file
         """        
         self._data = read_file(path)
-        
+    
+    def __getattribute__(self, __name: str) -> Any:
+        if __name == "shape":
+            return object.__getattribute__(self._data, 'shape')
+        else:
+            return super().__getattribute__(__name)
         
     def __getitem__(self, key) -> pd.DataFrame:
         """Get a row or a column from the file
