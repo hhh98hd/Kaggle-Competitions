@@ -3,6 +3,8 @@ import math
 
 import pandas as pd
 
+import os
+
 CSV = 'csv'
 JSON = 'json'
 EXCEL = 'xls'
@@ -61,8 +63,7 @@ class DataFile():
 
         Args:
             path (str): Path to the file
-        """
-        
+        """        
         self._data = read_file(path)
         
         
@@ -153,6 +154,3 @@ class DataFile():
                 sum += col[i]
 
         return sum / cnt
-    
-file = DataFile('train.csv')
-print(file.to_string(truncate_V=False, truncate_H=False))
