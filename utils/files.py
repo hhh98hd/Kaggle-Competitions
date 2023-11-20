@@ -3,8 +3,7 @@ import math
 from typing import Any
 
 import pandas as pd
-
-import os
+import torch
 
 CSV = 'csv'
 JSON = 'json'
@@ -59,6 +58,9 @@ def get_file_extension(file_path: str):
 
 
 class DataFile():
+    """DataFile is a class for handling and munipulating data files (csv, xls, json, ...).
+    """
+    
     def __init__(self, path: str) -> None:
         """Construtor for DataFile class
 
@@ -66,8 +68,17 @@ class DataFile():
             path (str): Path to the file
         """        
         self._data = read_file(path)
+        self.shape = self._data.shape
     
     def __getattribute__(self, __name: str) -> Any:
+        """Access to an attribute of the class
+
+        Args:
+            __name (str): Name of the attribute. If the attribute is "shape", this method will return the shape of its content (pandas DataFrame)
+
+        Returns:
+            Any: Attribute value
+        """
         if __name == "shape":
             return object.__getattribute__(self._data, 'shape')
         else:
@@ -79,6 +90,7 @@ class DataFile():
         Args:
             key (_type_): If key is an integer, the corresponding row will be returned.
             If key is a string, the corresponding column will b returned.
+            NOTE: Getting a column will return its copy.
 
         Returns:
             pd.DataFrame: A row/column corresponding to key
@@ -86,11 +98,15 @@ class DataFile():
         res = None
         
         if(type(key) == str):
-            return self._data[key]
+            return self._data.loc[:, (key)].copy()
         elif(type(key) == int):
             return self._data.iloc[key]
         
         return res
+    
+    def __setitem__(self, key, value):
+        self._data[key] = value
+        
     
     def to_string(self, truncate_H=True, truncate_V=True) -> str:
         """Represent the file content using a string
@@ -141,7 +157,7 @@ class DataFile():
         self._data = self._data.drop([row])
         
         
-    def get_column_avg(self, column: str):
+    def get_column_avg(self, column: str) -> float:
         """Get average value of a column. Only applicable to DataFrame of integers or floats
 
         Args:
@@ -160,3 +176,12 @@ class DataFile():
                 sum += col[i]
 
         return sum / cnt
+    
+    def to_tensor(self) -> torch.Tensor:
+        """Convert the Pandas DataFrame to a PyTorch tensor
+
+        Returns:
+            torch.Tensor: Converted DataFrame
+        """
+        import numpy as np
+        return torch.tensor(self._data.values.astype(np.float32))
