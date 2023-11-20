@@ -56,6 +56,17 @@ def get_file_extension(file_path: str):
     
     return type
 
+def to_tensor(data : pd.DataFrame):
+    """Convert a Pandas DataFrame to a PyTorch tensor
+
+        Returns:
+            torch.Tensor: The converted DataFrame
+    """
+    
+    import numpy as np
+    return torch.tensor(data.values.astype(np.float32))
+    
+
 
 class DataFile():
     """DataFile is a class for handling and munipulating data files (csv, xls, json, ...).
@@ -89,8 +100,8 @@ class DataFile():
 
         Args:
             key (_type_): If key is an integer, the corresponding row will be returned.
-            If key is a string, the corresponding column will b returned.
-            NOTE: Getting a column will return its copy.
+            If key is a string, the corresponding column will be returned.
+            NOTE: A copy will be returned
 
         Returns:
             pd.DataFrame: A row/column corresponding to key
@@ -100,7 +111,7 @@ class DataFile():
         if(type(key) == str):
             return self._data.loc[:, (key)].copy()
         elif(type(key) == int):
-            return self._data.iloc[key]
+            return self._data.iloc[key].copy()
         
         return res
     
@@ -176,12 +187,36 @@ class DataFile():
                 sum += col[i]
 
         return sum / cnt
-    
+        
     def to_tensor(self) -> torch.Tensor:
-        """Convert the Pandas DataFrame to a PyTorch tensor
+        """Convert the file to a Pytorch tensor\n
+        NOTE: Integer or float data only
 
         Returns:
-            torch.Tensor: Converted DataFrame
+            torch.Tensor: The converted data
         """
-        import numpy as np
-        return torch.tensor(self._data.values.astype(np.float32))
+        
+        return to_tensor(self._data)
+    
+    def get_data_and_groundtruth(self, groundtruth_col: str, use_tensor = False):
+        """Get train data and groundtruth (labels) from the file\n
+        NOTE: Please make sure only numerical data.
+
+        Args:
+            groundtruth_col (str): Name of the column(field) that contains the groudtruth\n
+            use_tensor (bool, optional): Convert to Pytorch tensor. Defaults to False.\n
+
+        Returns:
+            X: data
+            y: groundtruth
+        """
+        
+        X = self._data.loc[:, self._data.columns != groundtruth_col]
+        y = self._data[groundtruth_col]
+        
+        if use_tensor:
+            X = to_tensor(X)
+            y = to_tensor(y)
+        
+        return X, y    
+    
