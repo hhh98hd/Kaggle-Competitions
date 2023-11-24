@@ -4,6 +4,7 @@ from typing import Any
 
 import pandas as pd
 import torch
+import numpy as np
 
 CSV = 'csv'
 JSON = 'json'
@@ -56,15 +57,17 @@ def get_file_extension(file_path: str):
     
     return type
 
-def to_tensor(data : pd.DataFrame):
+def to_tensor(data : pd.DataFrame, dtype=np.float32):
     """Convert a Pandas DataFrame to a PyTorch tensor
+
+        Args:
+            dtype: Data type of the tensor
 
         Returns:
             torch.Tensor: The converted DataFrame
     """
     
-    import numpy as np
-    return torch.tensor(data.values.astype(np.float32))
+    return torch.tensor(data.values.astype(dtype))
     
 
 
@@ -152,7 +155,7 @@ class DataFile():
         self._data = pd.get_dummies(self._data, columns=[column], drop_first=drop_first, dtype=dtype)
         
     def remove_column(self, column: str):
-        """Remove a column by name
+        """Remove a column by its name
 
         Args:
             column (str): Name of the column
@@ -160,12 +163,26 @@ class DataFile():
         self._data = self._data.drop([column], axis=1)
         
     def remove_row(self, row: int):
-        """Remove a row by index
+        """Remove a row by its index
 
         Args:
             row (int): Index of a row
         """
         self._data = self._data.drop([row])
+        
+    
+    def get_all_columns_except(self, column_name: str) -> pd.DataFrame:
+        """" Get all columns from the file excep the `column_name` column
+        
+        Args:
+            column_name (str): Name of the column to be obmited
+
+        Returns:
+            (DataFrame): All columns except the `column_name` column
+        
+        """
+        
+        return self._data.loc[:, self._data.columns != column_name]
         
         
     def get_column_avg(self, column: str) -> float:
@@ -197,26 +214,4 @@ class DataFile():
         """
         
         return to_tensor(self._data)
-    
-    def get_data_and_groundtruth(self, groundtruth_col: str, use_tensor = False):
-        """Get train data and groundtruth (labels) from the file\n
-        NOTE: Please make sure only numerical data.
-
-        Args:
-            groundtruth_col (str): Name of the column(field) that contains the groudtruth\n
-            use_tensor (bool, optional): Convert to Pytorch tensor. Defaults to False.\n
-
-        Returns:
-            X: data
-            y: groundtruth
-        """
-        
-        X = self._data.loc[:, self._data.columns != groundtruth_col]
-        y = self._data[groundtruth_col]
-        
-        if use_tensor:
-            X = to_tensor(X)
-            y = to_tensor(y)
-        
-        return X, y    
     
