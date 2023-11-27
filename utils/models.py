@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+from torch.utils.data import TensorDataset
 
 from tqdm import tqdm
 
@@ -21,7 +22,28 @@ class BaseModel(nn.Module):
     def predict(X):
         pass
 
-    def train_model(self, train_dataset, val_dataset, loss_func, optimizer: torch.optim.Optimizer, eval_metric, epoch_num=1000, batch_size=8, show_progress=True, show_graph=True):
+    def train_model(self, 
+                    train_dataset: TensorDataset, val_dataset: TensorDataset, 
+                    loss_func, optimizer: torch.optim.Optimizer,
+                    eval_metric, 
+                    epoch_num=1000, batch_size=8, 
+                    show_progress=True, show_graph=True):
+        """Train the model
+
+        Args:
+            train_dataset (TensorDataset): The dataset for training the mode;
+            val_dataset (TensorDataset): The dataset for evaluating the model
+            loss_func (_type_): Loss function
+            optimizer (torch.optim.Optimizer): Optimizer function (Schotastic Gradient Descent, Adam, ...)
+            eval_metric (function): The metric used to evaluate the model (F1, accuracy, ...)
+            The metric used must follow the following prototye:\n
+            def metric(targets: list, predictions: list) -> float\n
+            epoch_num (int, optional): Number of iterations. Defaults to 1000.
+            batch_size (int, optional): Batch size. Defaults to 8.
+            show_progress (bool, optional): Show trainng progress (%). Defaults to True.
+            show_graph (bool, optional): Show loss & score vs iteration graph. Defaults to True.
+        """
+        
         # Set the model in training mode
         self.train()
         torch.cuda.empty_cache()
@@ -128,6 +150,14 @@ class BinaryLogisticRegression(BaseModel):
         return x.squeeze(1)
     
     def predict(self, X):
+        """Make predictions based on the model's outputs
+
+        Args:
+            X (Any): The model's outputs
+
+        Returns:
+            list(int): Predictions
+        """
         predictions = self(X)
                 
         predictions[predictions >= self._threshold] = 1

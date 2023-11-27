@@ -17,7 +17,14 @@ from utils.data import create_dataset, split_data
 
 from sklearn.metrics import accuracy_score
 
-def preprocess_datafile(file: DataFile):
+def preprocess_datafile(file: DataFile) -> None:
+    """Preprocess CSV files. This method will remove redundant columns 
+    and fill missing values with the average of the corresponding column (Numerical columns only)
+
+    Args:
+        file (DataFile): Input file
+    """
+    
     # Remove redundant columns
     file.remove_column('Name')
     file.remove_column('Ticket')
@@ -37,7 +44,19 @@ def preprocess_datafile(file: DataFile):
     file.apply_hot_encoding('Sex', drop_first=True)
     file.apply_hot_encoding('Embarked')
 
-def tune_hyperparams(regs, momentums, train_set, val_set):
+def tune_hyperparams(regs, momentums, train_set, val_set) -> tuple():
+    """Tune the Logistic Regression model's regularization and momentum
+
+    Args:
+        regs (list(float)): A list of regularization values
+        momentums (list(float)): A list of momentum values
+        train_set (torch.TensorDataset): The dataset for training
+        val_set (torch.TensorDataset): The dataset for evaluation
+
+    Returns:
+        tuple(float, float): A pair of regularization and momentum that produces the highest accuracy
+    """
+    
     progress = tqdm(total=len(regs) * len(momentums))
     
     best_acc = 0.0
