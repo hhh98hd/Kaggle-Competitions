@@ -12,7 +12,7 @@ PAR_DIR = os.path.dirname(__file__)
 sys.path.insert(0, PROJ_DIR)
 
 from utils.files import DataFile, to_tensor, export_to_csv
-from utils.models import BinaryLogisticRegression
+from model import BinaryLogisticRegression
 from utils.data import create_dataset, split_data
 
 from sklearn.metrics import accuracy_score

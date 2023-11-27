@@ -17,7 +17,7 @@ def create_dataset(X, y) -> TensorDataset:
     
     return TensorDataset(X, y)
 
-def split_data(data,
+def split_data(data: Tensor,
                train_fraction: float,
                val_fraction: float,
                test_fraction=0.0) -> tuple:
