@@ -1,63 +1,120 @@
 import os
 import sys
-import math
 
-from torch.utils.data import TensorDataset
 import torch
 from torch.nn import BCELoss
-import numpy as np
+
+from tqdm import tqdm
 
 PROJ_DIR = os.getcwd()
 PAR_DIR = os.path.dirname(__file__)
 
 sys.path.insert(0, PROJ_DIR)
 
-from utils.files import DataFile, to_tensor
-from utils.models import LogisticRegression
+from utils.files import DataFile, to_tensor, export_to_csv
+from utils.models import BinaryLogisticRegression
 from utils.data import create_dataset, split_data
 
 from sklearn.metrics import accuracy_score
 
-if __name__ == '__main__':
-    # TODO: Check if performing one-hot encoding on Pclass improves the model's performance
-    
-    train_file = DataFile(os.path.join(PAR_DIR, 'data/train.csv'))
-                    
+def preprocess_datafile(file: DataFile):
     # Remove redundant columns
-    train_file.remove_column('Name')
-    train_file.remove_column('Ticket')
-    train_file.remove_column('PassengerId')
-    train_file.apply_hot_encoding('Sex', drop_first=True)
-    train_file.apply_hot_encoding('Embarked')
+    file.remove_column('Name')
+    file.remove_column('Ticket')
+    file.remove_column('PassengerId')
     # Because there are too many missing fields (NaN) in this column so it will be removed
-    train_file.remove_column('Cabin')
-        
-    # Replace missing values (NaN) with average of the column
-    avg_age = train_file.get_column_avg('Age')
-    pax_ages = train_file['Age']
-    for i in range(0, len(pax_ages)):
-        if(math.isnan(pax_ages[i])): pax_ages[i] = avg_age
-    train_file['Age'] = pax_ages
-        
+    file.remove_column('Cabin')
+    
+    # Replace missing values (NaN)
+    avg_age = file.get_column_avg('Age') # Replace with the average of the column
+    file['Age'] = file['Age'].fillna(avg_age)
+    
+    avg_fare = file.get_column_avg('Fare')
+    file['Fare'] = file['Fare'].fillna(avg_fare)
+    
+    file['Embarked'] = file['Embarked'] .fillna('S') # Embarked: S: 644, C: 168, Q: 77 => S is the most prevailent value
+    
+    file.apply_hot_encoding('Sex', drop_first=True)
+    file.apply_hot_encoding('Embarked')
+
+def tune_hyperparams(regs, momentums, train_set, val_set):
+    progress = tqdm(total=len(regs) * len(momentums))
+    
+    best_acc = 0.0
+    best_params = (0.0, 0.0)
+    
+    for reg in regs:
+        for momentum in momentums:
+            # Init the model
+            model = BinaryLogisticRegression(n_input=train_set[0][0].shape[0], threshold=0.5).cuda()
+                
+            # Train the model    
+            model.train_model(train_set, 
+                        val_set, 
+                        eval_metric=accuracy_score,
+                        loss_func=BCELoss(),
+                        optimizer=torch.optim.SGD(params=model.parameters(), lr=1e-4, weight_decay=reg, momentum=momentum),
+                        batch_size=64,
+                        epoch_num=3000,
+                        show_progress=False)
+            
+            model_acc = model.evaluate(val_set, batch_size=32, metric=accuracy_score)
+            
+            progress.update(1)
+            
+            if model_acc > best_acc:
+                best_acc = model_acc
+                best_params = (reg, momentum)
+            
+            print('Regularization: {r}     Momentum: {m}     Accuracy: {acc}'.format(r = reg, m=momentum, acc=model_acc))
+            
+    print('The highest accuracy: {acc} was achieved with regularization = {r}, momentum = {m}'.format(acc=best_acc, r=best_params[0], m=best_params[1]))
+            
+    return best_params
+
+
+if __name__ == '__main__':    
+    train_file = DataFile(os.path.join(PAR_DIR, 'data/train.csv'))
+    test_file = DataFile(os.path.join(PAR_DIR, 'data/test.csv'))
+    
+    preprocess_datafile(train_file)
+    preprocess_datafile(test_file)
+   
     # Prepare dataset
     X = train_file.get_all_columns_except('Survived')
     y = train_file['Survived']
     
-    X_train, X_val, _ = split_data(to_tensor(X), 0.7, 0.3)
-    y_train, y_val, _ = split_data(to_tensor(y), 0.7, 0.3)
+    X_train, X_val, _ = split_data(to_tensor(X), 0.8, 0.2)
+    y_train, y_val, _ = split_data(to_tensor(y), 0.8, 0.2)
         
     train_dataset = create_dataset(X_train, y_train)
     val_dataset = create_dataset(X_val, y_val)
-        
-    # Init the model
-    model = LogisticRegression(X.shape[1], 1e-3)
+                
+    momentums=[0, 0.1, 0.5, 0.9, 0.95, 0.99]
+    regs=[1, 0.1, 0.01, 1e-3, 1e-4, 1e-5, 1e-6]
+    # best_reg, best_momentum = tune_hyperparams(regs, momentums, train_dataset, val_dataset)
     
-    # # Train the model    
-    # model.train(train_dataset, 
-    #             val_dataset, 
-    #             eval_metric=accuracy_score,
-    #             loss_func=BCELoss(),
-    #             optimizer=torch.optim.SGD(params=model.parameters(), lr=1e-4),
-    #             epoch_num=3000)
-
+    best_reg = 0.01
+    best_momentum = 0.95
+    
+    # Merge the training set and the validation set
+    train_dataset = create_dataset(to_tensor(X), to_tensor(y))
+    
+    model = BinaryLogisticRegression(n_input=train_dataset[0][0].shape[0], threshold=0.5).cuda()
+    
+    # Train the model    
+    model.train_model(train_dataset, 
+                val_dataset, 
+                eval_metric=accuracy_score,
+                loss_func=BCELoss(),
+                optimizer=torch.optim.SGD(params=model.parameters(), lr=1e-4, weight_decay=best_reg, momentum=best_momentum),
+                batch_size=64,
+                epoch_num=3000,
+                show_progress=False)
+    
+    model.cpu()
+    X_test = to_tensor(test_file.get_all_columns_except('Survived'))
+    predictions = model.predict(X_test)
+    
+    export_to_csv(predictions, 'PassengerId', 'Survived', start_idx=892)
     

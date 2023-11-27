@@ -1,6 +1,8 @@
+import os
 import ntpath
 import math
 from typing import Any
+from datetime import datetime
 
 import pandas as pd
 import torch
@@ -37,6 +39,19 @@ def read_file(path: str):
 
     return file
 
+def export_to_csv(predictions, first_col: str, second_col: str, path='', start_idx=0):    
+    if path == '':
+        path = os.path.join(os.path.dirname(__file__), './output_' + datetime.now().strftime("%H%M%S_%d%b%y") + '.csv')
+        
+    i = start_idx
+    file = open(path, 'w')
+    
+    file.write(first_col + ',' + second_col + '\n')
+    for pred in predictions:
+        file.write("%d,%d\n" % (i, pred))
+        i += 1
+    
+    file.close()
 
 def get_file_extension(file_path: str):
     """Get the file extension from a path
