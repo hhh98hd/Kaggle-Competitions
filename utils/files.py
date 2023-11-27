@@ -39,7 +39,17 @@ def read_file(path: str):
 
     return file
 
-def export_to_csv(predictions, first_col: str, second_col: str, path='', start_idx=0):    
+def export_to_csv(predictions, first_col: str, second_col: str, path='', start_idx=0):
+    """Export model's predictions to a CSV file
+
+    Args:
+        predictions (list): A list of predictions
+        first_col (str): Name of the first column
+        second_col (str): Name of the second column
+        path (str, optional): Location of the exported file. Defaults to the `util` directory
+        start_idx (int, optional): ID of the first prediction. Defaults to 0.
+    """
+        
     if path == '':
         path = os.path.join(os.path.dirname(__file__), './output_' + datetime.now().strftime("%H%M%S_%d%b%y") + '.csv')
         
