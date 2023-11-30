@@ -64,6 +64,7 @@ class BaseModel(nn.Module):
                 optimizer.zero_grad()
                 
                 outputs = self(X)
+
                 loss = loss_func(outputs, y)
                 total_loss += float(loss)
                 

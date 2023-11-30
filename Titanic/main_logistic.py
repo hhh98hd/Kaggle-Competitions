@@ -8,11 +8,12 @@ from tqdm import tqdm
 
 PROJ_DIR = os.getcwd()
 PAR_DIR = os.path.dirname(__file__)
+torch.manual_seed(101)
 
 sys.path.insert(0, PROJ_DIR)
 
 from utils.files import DataFile, to_tensor, export_to_csv
-from model import BinaryLogisticRegression
+from model import SurvivabilityClassifier, SurvivabilityClassifierNN
 from utils.data import create_dataset, split_data
 
 from sklearn.metrics import accuracy_score
@@ -65,7 +66,7 @@ def tune_hyperparams(regs, momentums, train_set, val_set) -> tuple():
     for reg in regs:
         for momentum in momentums:
             # Init the model
-            model = BinaryLogisticRegression(n_input=train_set[0][0].shape[0], threshold=0.5).cuda()
+            model = SurvivabilityClassifier(n_input=train_set[0][0].shape[0], threshold=0.5).cuda()
                 
             # Train the model    
             model.train_model(train_set, 
@@ -90,7 +91,6 @@ def tune_hyperparams(regs, momentums, train_set, val_set) -> tuple():
     print('The highest accuracy: {acc} was achieved with regularization = {r}, momentum = {m}'.format(acc=best_acc, r=best_params[0], m=best_params[1]))
             
     return best_params
-
 
 if __name__ == '__main__':    
     train_file = DataFile(os.path.join(PAR_DIR, 'data/train.csv'))
@@ -119,8 +119,8 @@ if __name__ == '__main__':
     # Merge the training set and the validation set
     train_dataset = create_dataset(to_tensor(X), to_tensor(y))
     
-    model = BinaryLogisticRegression(n_input=train_dataset[0][0].shape[0], threshold=0.5).cuda()
-    
+    model = SurvivabilityClassifier(n_input=train_dataset[0][0].shape[0], threshold=0.5).cuda()
+        
     # Train the model    
     model.train_model(train_dataset, 
                 val_dataset, 
